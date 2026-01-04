@@ -59,32 +59,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
               }
 
-              // Remove list item from DOM
-              if (li) li.remove();
-
-              // Update participants count
-              const participantsList = card.querySelectorAll('.participants-list > .participant-item');
-              const count = participantsList ? participantsList.length : 0;
-              const participantsHeader = card.querySelector('.participants-count');
-              if (participantsHeader) participantsHeader.textContent = `Participants (${count})`;
-
-              // If none left, replace list with no-participants message
-              const listEl = card.querySelector('.participants-list');
-              if (!listEl || count === 0) {
-                if (listEl) listEl.remove();
-                const np = document.createElement('p');
-                np.className = 'no-participants';
-                np.textContent = 'No participants yet.';
-                card.querySelector('.participants-section').appendChild(np);
-              }
-
-              // Update availability
-              const max = parseInt(card.dataset.max || '0', 10);
-              const spotsLeftEl = card.querySelector('.availability');
-              if (spotsLeftEl) {
-                const spotsLeft = max - count;
-                spotsLeftEl.innerHTML = `<strong>Availability:</strong> ${spotsLeft} spots left`;
-              }
+              // After successful deletion, refresh activities from server to ensure
+              // participant counts and availability are accurate.
+              await fetchActivities();
 
             } catch (err) {
               console.error('Error removing participant:', err);
@@ -98,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-      // Handle form submission
+  // Handle form submission
   signupForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 

@@ -164,6 +164,14 @@ footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 6px 8px;
+  margin-bottom: 8px;
+  background: linear-gradient(180deg, #ffffff, #fbfbff);
+  border: 1px solid #eef0ff;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #333;
+  box-shadow: 0 1px 0 rgba(26,35,126,0.02);
 }
 
 .delete-participant {
@@ -178,18 +186,6 @@ footer {
 
 .delete-participant:hover {
   background: rgba(198,40,40,0.08);
-}
-
-.participant-item {
-  display: block;
-  padding: 6px 8px;
-  margin-bottom: 8px;
-  background: linear-gradient(180deg, #ffffff, #fbfbff);
-  border: 1px solid #eef0ff;
-  border-radius: 6px;
-  font-size: 14px;
-  color: #333;
-  box-shadow: 0 1px 0 rgba(26,35,126,0.02);
 }
 
 .no-participants {
