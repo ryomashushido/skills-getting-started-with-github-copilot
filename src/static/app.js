@@ -12,6 +12,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Clear loading message
       activitiesList.innerHTML = "";
+      // Reset activity select to avoid duplicated options on re-fetch
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
@@ -21,11 +23,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const spotsLeft = details.max_participants - details.participants.length;
 
         activityCard.innerHTML = `
-          <h4>${name}</h4>
-          <p>${details.description}</p>
-          <p><strong>Schedule:</strong> ${details.schedule}</p>
-          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
-        `;
+            <h4>${name}</h4>
+            <p>${details.description}</p>
+            <p><strong>Schedule:</strong> ${details.schedule}</p>
+            <p class="availability"><strong>Availability:</strong> ${spotsLeft} spots left</p>
+            <div class="participants-section">
+              <h5 class="participants-count">Participants (${details.participants.length})</h5>
+              ${details.participants.length ? `<ul class="participants-list">${details.participants.map(p => `<li class="participant-item"><span class="participant-email">${p}</span><button class="delete-participant" data-activity="${name}" data-email="${p}" aria-label="Remove participant">✖</button></li>`).join("")}</ul>` : `<p class="no-participants">No participants yet.</p>`}
+            </div>
+          `;
+        activityCard.dataset.max = details.max_participants;
 
         activitiesList.appendChild(activityCard);
 
@@ -34,6 +41,56 @@ document.addEventListener("DOMContentLoaded", () => {
         option.value = name;
         option.textContent = name;
         activitySelect.appendChild(option);
+
+        // Attach delete handlers for participant buttons inside this activity card
+        activityCard.querySelectorAll('.delete-participant').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const email = btn.dataset.email;
+            const activity = btn.dataset.activity;
+            const li = btn.closest('li');
+            const card = btn.closest('.activity-card');
+
+            try {
+              const resp = await fetch(`/activities/${encodeURIComponent(activity)}/participants?email=${encodeURIComponent(email)}`, { method: 'DELETE' });
+              const result = await resp.json();
+
+              if (!resp.ok) {
+                console.error('Failed to remove participant', result);
+                return;
+              }
+
+              // Remove list item from DOM
+              if (li) li.remove();
+
+              // Update participants count
+              const participantsList = card.querySelectorAll('.participants-list > .participant-item');
+              const count = participantsList ? participantsList.length : 0;
+              const participantsHeader = card.querySelector('.participants-count');
+              if (participantsHeader) participantsHeader.textContent = `Participants (${count})`;
+
+              // If none left, replace list with no-participants message
+              const listEl = card.querySelector('.participants-list');
+              if (!listEl || count === 0) {
+                if (listEl) listEl.remove();
+                const np = document.createElement('p');
+                np.className = 'no-participants';
+                np.textContent = 'No participants yet.';
+                card.querySelector('.participants-section').appendChild(np);
+              }
+
+              // Update availability
+              const max = parseInt(card.dataset.max || '0', 10);
+              const spotsLeftEl = card.querySelector('.availability');
+              if (spotsLeftEl) {
+                const spotsLeft = max - count;
+                spotsLeftEl.innerHTML = `<strong>Availability:</strong> ${spotsLeft} spots left`;
+              }
+
+            } catch (err) {
+              console.error('Error removing participant:', err);
+            }
+          });
+        });
       });
     } catch (error) {
       activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";
@@ -41,7 +98,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Handle form submission
+      // Handle form submission
   signupForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
@@ -62,6 +119,9 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+
+        // Refresh activities so the new participant appears immediately
+        await fetchActivities();
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
